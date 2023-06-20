@@ -43,6 +43,7 @@ class IQLLearner(acme.Learner):
       self,
       random_key: types.PRNGKey,
       networks: iql_networks.IQLNetworks,
+      bc_network: networks_lib.FeedForwardNetwork,
       dataset: Iterator[core_types.Transition],
       policy_optimizer: optax.GradientTransformation,
       critic_optimizer: optax.GradientTransformation,
@@ -77,6 +78,20 @@ class IQLLearner(acme.Learner):
     policy_network = networks.policy_network
     value_network = networks.value_network
     critic_network = networks.critic_network
+
+    def bc_loss_fn(
+        policy_params: networks_lib.Params,
+        key: types.PRNGKey,
+        batch: core_types.Transition
+        ) -> Tuple[jnp.ndarray, Any]:
+
+      dist = bc_network.apply(
+          policy_params, batch.observation, is_training=True, key=key)
+      log_probs = dist.log_prob(batch.action)
+      bc_loss = -(log_probs * batch.bc_log_prob).mean()
+
+      return bc_loss, {"bc_loss": bc_loss}
+
 
     def awr_actor_loss_fn(
         policy_params: networks_lib.Params,
@@ -180,7 +195,7 @@ class IQLLearner(acme.Learner):
     self._update_step = jax.jit(update_step)
 
     def make_initial_state(key):
-      policy_key, critic_key, value_key, key = jax.random.split(key, 4)
+      bc_key, policy_key, critic_key, value_key, key = jax.random.split(key, 5)
       policy_params = policy_network.init(policy_key)
       policy_opt_state = policy_optimizer.init(policy_params)
       critic_params = critic_network.init(critic_key)
