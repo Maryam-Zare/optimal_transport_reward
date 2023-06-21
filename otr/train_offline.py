@@ -138,7 +138,7 @@ def main(_):
 
   # Create dataset iterator for the relabeled dataset
   key = jax.random.PRNGKey(config.seed)
-  key_learner, key_demo, key = jax.random.split(key, 3)
+  key_learner, key_demo, key_bc, key = jax.random.split(key, 4)
 
   iterator = dataset_utils.JaxInMemorySampler(dataset, key_demo,
                                               config.batch_size)
@@ -151,6 +151,9 @@ def main(_):
   networks = iql.make_networks(
       spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
 
+  bc_network = iql.make_bc_network(spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
+
+  
   counter = counting.Counter(time_delta=0.0)
 
   if config.opt_decay_schedule == "cosine":
@@ -166,11 +169,13 @@ def main(_):
   learner = iql.IQLLearner(
       networks=networks,
       random_key=key_learner,
+      random_key_bc = key_bc,
       dataset=iterator,
       policy_optimizer=policy_optimizer,
       critic_optimizer=optax.adam(config.critic_lr),
       value_optimizer=optax.adam(config.value_lr),
       **config.iql_kwargs,
+      **config.bc_kwargs,
       logger=logger_factory('learner', learner_counter.get_steps_key(), 0),
       counter=learner_counter,
   )

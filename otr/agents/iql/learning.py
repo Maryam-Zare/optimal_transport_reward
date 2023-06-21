@@ -18,6 +18,8 @@ _Metrics = Dict[str, jnp.ndarray]
 
 
 class TrainingState(NamedTuple):
+  old_policy_params: networks_lib.Params
+  old_policy_opt_state: optax.OptState
   policy_params: networks_lib.Params
   policy_opt_state: optax.OptState
   value_params: networks_lib.Params
@@ -27,6 +29,13 @@ class TrainingState(NamedTuple):
   target_critic_params: networks_lib.Params
   key: types.PRNGKey
   steps: int
+
+class BCTrainingState:
+    
+    # Behavior cloning network parameters and optimizer state
+  bc_params: networks_lib.Params
+  bc_opt_state: optax.OptState
+  key: types.PRNGKey
 
 
 def expectile_loss(diff, expectile=0.8):
@@ -42,6 +51,7 @@ class IQLLearner(acme.Learner):
   def __init__(
       self,
       random_key: types.PRNGKey,
+      random_key_bc: types.PRNGKey,
       networks: iql_networks.IQLNetworks,
       bc_network: networks_lib.FeedForwardNetwork,
       dataset: Iterator[core_types.Transition],
@@ -52,6 +62,7 @@ class IQLLearner(acme.Learner):
       tau: float = 0.005,
       expectile: float = 0.8,
       temperature: float = 0.1,
+      max_steps = int = 5e5,
       counter=None,
       logger=None,
   ):
@@ -78,6 +89,7 @@ class IQLLearner(acme.Learner):
     policy_network = networks.policy_network
     value_network = networks.value_network
     critic_network = networks.critic_network
+    self._bc_max_steps = max_steps
 
     def bc_loss_fn(
         policy_params: networks_lib.Params,
@@ -144,9 +156,24 @@ class IQLLearner(acme.Learner):
           "q2": q2.mean(),
       }
 
+    bc_grad_fn = jax.grad(bc_loss_fn, has_aux=True)
     actor_grad_fn = jax.grad(awr_actor_loss_fn, has_aux=True)
     value_grad_fn = jax.grad(value_loss_fn, has_aux=True)
     critic_grad_fn = jax.grad(critic_loss_fn, has_aux=True)
+    
+    def bc_update_step(
+        state: BCTrainingState,
+        batch: core_types.Transition
+    ) -> Tuple[BCTrainingState, _Metrics]:
+      # Update behavior cloning network
+      bc_key, key = jax.random.split(state.key)
+      bc_grads, bc_metrics = bc_grad_fn(state.bc_params, bc_key, batch)
+      bc_updates, bc_opt_state = bc_optimizer.update(bc_grads, state.bc_opt_state)
+      bc_params = optax.apply_updates(state.bc_params, bc_updates)
+
+      state = state.replace(bc_params=bc_params, bc_opt_state=bc_opt_state, key=key)
+
+      return state, bc_metrics
 
     def update_step(
         state: TrainingState,
@@ -193,16 +220,34 @@ class IQLLearner(acme.Learner):
       return state, {**critic_metrics, **value_metrics, **policy_metrics}
 
     self._update_step = jax.jit(update_step)
+    self._bc_update_step = jax.jit(bc_update_step)
 
-    def make_initial_state(key):
-      bc_key, policy_key, critic_key, value_key, key = jax.random.split(key, 5)
-      policy_params = policy_network.init(policy_key)
-      policy_opt_state = policy_optimizer.init(policy_params)
+    def make_initial_state_bc(key):
+      bc_key, key = jax.random.split(key)
+
+      bc_params = bc_network.init(bc_key)
+      bc_opt_state = policy_optimizer.init(bc_params)
+
+      state = BCTrainingState(
+          bc_params=bc_params,
+          bc_opt_state=bc_opt_state,
+          key=key,
+      )
+      return state
+
+    def make_initial_state(key, bc_state):
+      critic_key, value_key, key = jax.random.split(key, 3)
+      old_policy_params = bc_state.bc_params
+      old_policy_opt_state = bc_state.bc_opt_state
+      policy_params = bc_state.bc_params
+      policy_opt_state = bc_state.bc_opt_state
       critic_params = critic_network.init(critic_key)
       critic_opt_state = critic_optimizer.init(critic_params)
       value_params = value_network.init(value_key)
       value_opt_state = value_optimizer.init(value_params)
       state = TrainingState(
+          old_policy_params=old_policy_params,
+          old_policy_opt_state=old_policy_opt_state,
           policy_params=policy_params,
           policy_opt_state=policy_opt_state,
           critic_params=critic_params,
@@ -215,12 +260,22 @@ class IQLLearner(acme.Learner):
       )
       return state
 
-    self._state = make_initial_state(random_key)
+    self._bc_state = make_initial_state_bc(random_key_bc)
     self._iterator = dataset
+
+    for _ in _bc_max_steps:
+      transitions = next(self._iterator)
+      self._bc_state, metrics = self._bc_update_step(self._bc_state, transitions)
+
+    self._state = make_initial_state(random_key, self._bc_state)
+    
     self._logger = logger or loggers.make_default_logger(
         "learner", save_data=False)
     self._counter = counter or counting.Counter()
-    self._timestamp = None
+    self._timestamp = None  
+
+
+
 
   def step(self):
     # Get data from replay
