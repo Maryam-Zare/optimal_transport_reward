@@ -173,10 +173,10 @@ def apply_policy_and_sample(
   return policy_network
 
 def make_bc_network(spec: specs.EnvironmentSpec, hidden_dims=(256, 256), dropout_rate=None):
-    action_dim = spec.actions.shape[-1]
+  action_dim = spec.actions.shape[-1]
 
-    def _actor_fn(observations, *, is_training=True, key=None):
-        return Policy(
+  def _actor_fn(observations, *, is_training=True, key=None):
+    return Policy(
             hidden_dims,
             action_dim,
             log_std_scale=1e-3,
@@ -186,10 +186,10 @@ def make_bc_network(spec: specs.EnvironmentSpec, hidden_dims=(256, 256), dropout
             dropout_rate=dropout_rate,
         )(observations, is_training=is_training, key=key)
 
-    policy = hk.without_apply_rng(hk.transform(_actor_fn))
-    dummy_obs = jnp.zeros((1, *spec.observations.shape), dtype=spec.observations.dtype)
+  policy = hk.without_apply_rng(hk.transform(_actor_fn))
+  dummy_obs = jnp.zeros((1, *spec.observations.shape), dtype=spec.observations.dtype)
 
-    return networks_lib.FeedForwardNetwork(
+  return networks_lib.FeedForwardNetwork(
         init=lambda key: policy.init(key, dummy_obs, is_training=False),
         apply=policy.apply,
     )
