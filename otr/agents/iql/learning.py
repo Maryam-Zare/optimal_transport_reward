@@ -275,6 +275,8 @@ class IQLLearner(acme.Learner):
     self._timestamp = None  
 
 
+  def update_old_policy(self):
+    self._state.old_policy_params = self._state.policy_params
 
 
   def step(self):

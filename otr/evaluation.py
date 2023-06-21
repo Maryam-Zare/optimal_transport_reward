@@ -55,3 +55,4 @@ class D4RLEvalLoop(core.Worker):
     }
     result.update(counts)
     self._logger.write(result)
+    return average_normalized_return

@@ -204,11 +204,16 @@ def main(_):
 
   # Run the environment loop.
   steps = 0
+  best_average = average_normalized_return = 0
   while steps < config.max_steps:
     for _ in range(config.evaluate_every):
       learner.step()
     steps += config.evaluate_every
-    eval_loop.run(config.evaluation_episodes)
+    average_normalized_return = eval_loop.run(config.evaluation_episodes)
+    if average_normalized_return > best_average:
+      learner.update_old_policy()
+      best_average = average_normalized_return
+
 
 
 if __name__ == '__main__':

@@ -47,6 +47,8 @@ def get_config():
       discount=0.99,
       expectile=0.7,  # The actual tau for expectiles.
       temperature=3.0)
+  config.bc_kwargs = dict(
+      max_steps = int(5e5))
   return config
 
 
