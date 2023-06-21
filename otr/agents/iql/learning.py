@@ -62,7 +62,7 @@ class IQLLearner(acme.Learner):
       tau: float = 0.005,
       expectile: float = 0.8,
       temperature: float = 0.1,
-      max_steps = int = 5e5,
+      max_steps: int = 5e5,
       counter=None,
       logger=None,
   ):
@@ -127,6 +127,45 @@ class IQLLearner(acme.Learner):
           "actor_loss": actor_loss,
           "advantage": jnp.mean(q - v)
       }
+    
+    def awr_actor_loss_fn(
+        policy_params: networks_lib.Params,
+        key: types.PRNGKey,
+        target_critic_params: networks_lib.Params,
+        value_params: networks_lib.Params,
+        batch: core_types.Transition,
+        steps: int,
+        clip_ratio: float = .25,
+        entropy_weight: float = 0.01,
+        is_clip_decay: bool = True
+    ) -> Tuple[jnp.ndarray, Any]:
+      v = value_network.apply(value_params, batch.observation)
+      q1, q2 = critic_network.apply(target_critic_params, batch.observation, batch.action)
+      q = jnp.minimum(q1, q2)
+      advantage = q - v
+      advantage = (advantage - jnp.mean(advantage)) / (jnp.std(advantage) + 1e-8)
+
+      dist = policy_network.apply(policy_params, batch.observation, is_training=True, key=key)
+      log_probs = dist.log_prob(batch.action)
+      old_dist = policy_network.apply(old_policy_params, batch.observation, is_training=True, key=key)
+      old_log_probs = old_dist.log_prob(batch.action)
+
+      ratio = jnp.exp(log_probs - old_log_probs)
+
+      if steps < 200:
+          clip_ratio *= 0.96
+
+      loss1 = ratio * advantage
+      loss2 = jnp.clip(ratio, 1 - clip_ratio, 1 + clip_ratio) * advantage
+      entropy_loss = dist.entropy().sum(-1, keepdims=True) * entropy_weight
+
+      actor_loss = -(jnp.minimum(loss1, loss2) + entropy_loss).mean()
+
+      return actor_loss, {
+          "actor_loss": actor_loss,
+          "advantage": jnp.mean(advantage)
+      }
+
 
     def value_loss_fn(
         value_params: networks_lib.Params,
@@ -193,6 +232,7 @@ class IQLLearner(acme.Learner):
           state.target_critic_params,
           value_params,
           batch,
+          state.steps
       )
       policy_updates, policy_opt_state = policy_optimizer.update(
           policy_grads, state.policy_opt_state)
