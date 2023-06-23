@@ -30,7 +30,7 @@ class TrainingState(NamedTuple):
   key: types.PRNGKey
   steps: int
 
-class BCTrainingState:
+class BCTrainingState(NamedTuple):
     
     # Behavior cloning network parameters and optimizer state
   bc_params: networks_lib.Params
@@ -47,6 +47,8 @@ class IQLLearner(acme.Learner):
   """IQL Learner."""
 
   _state: TrainingState
+  _bc_state: BCTrainingState
+  _bc_max_steps: int
 
   def __init__(
       self,
@@ -100,36 +102,16 @@ class IQLLearner(acme.Learner):
       dist = bc_network.apply(
           policy_params, batch.observation, is_training=True, key=key)
       log_probs = dist.log_prob(batch.action)
-      bc_loss = -(log_probs * batch.bc_log_prob).mean()
+      bc_loss = -(log_probs).mean()
 
       return bc_loss, {"bc_loss": bc_loss}
 
 
-    def awr_actor_loss_fn(
-        policy_params: networks_lib.Params,
-        key: types.PRNGKey,
-        target_critic_params: networks_lib.Params,
-        value_params: networks_lib.Params,
-        batch: core_types.Transition,
-    ) -> Tuple[jnp.ndarray, Any]:
-      v = value_network.apply(value_params, batch.observation)
-      q1, q2 = critic_network.apply(target_critic_params, batch.observation,
-                                    batch.action)
-      q = jnp.minimum(q1, q2)
-      exp_a = jnp.exp((q - v) * temperature)
-      exp_a = jnp.minimum(exp_a, 100.0)
-      dist = policy_network.apply(
-          policy_params, batch.observation, is_training=True, key=key)
-      log_probs = dist.log_prob(batch.action)
-      actor_loss = -(exp_a * log_probs).mean()
 
-      return actor_loss, {
-          "actor_loss": actor_loss,
-          "advantage": jnp.mean(q - v)
-      }
-    
+
     def awr_actor_loss_fn(
         policy_params: networks_lib.Params,
+        old_policy_params: networks_lib.Params,
         key: types.PRNGKey,
         target_critic_params: networks_lib.Params,
         value_params: networks_lib.Params,
@@ -152,8 +134,7 @@ class IQLLearner(acme.Learner):
 
       ratio = jnp.exp(log_probs - old_log_probs)
 
-      if steps < 200:
-          clip_ratio *= 0.96
+      clip_ratio = jnp.where(steps<200, 0.96*clip_ratio, clip_ratio)
 
       loss1 = ratio * advantage
       loss2 = jnp.clip(ratio, 1 - clip_ratio, 1 + clip_ratio) * advantage
@@ -207,10 +188,10 @@ class IQLLearner(acme.Learner):
       # Update behavior cloning network
       bc_key, key = jax.random.split(state.key)
       bc_grads, bc_metrics = bc_grad_fn(state.bc_params, bc_key, batch)
-      bc_updates, bc_opt_state = bc_optimizer.update(bc_grads, state.bc_opt_state)
+      bc_updates, bc_opt_state = policy_optimizer.update(bc_grads, state.bc_opt_state)
       bc_params = optax.apply_updates(state.bc_params, bc_updates)
 
-      state = state.replace(bc_params=bc_params, bc_opt_state=bc_opt_state, key=key)
+      state = BCTrainingState(bc_params=bc_params, bc_opt_state=bc_opt_state, key=key)
 
       return state, bc_metrics
 
@@ -228,6 +209,7 @@ class IQLLearner(acme.Learner):
       # Update policy network
       policy_grads, policy_metrics = actor_grad_fn(
           state.policy_params,
+          state.old_policy_params,
           policy_key,
           state.target_critic_params,
           value_params,
@@ -249,6 +231,8 @@ class IQLLearner(acme.Learner):
       state = TrainingState(
           policy_params=policy_params,
           policy_opt_state=policy_opt_state,
+          old_policy_params=state.old_policy_params,
+          old_policy_opt_state=state.old_policy_opt_state,
           critic_params=critic_params,
           critic_opt_state=critic_opt_state,
           value_params=value_params,
@@ -303,7 +287,8 @@ class IQLLearner(acme.Learner):
     self._bc_state = make_initial_state_bc(random_key_bc)
     self._iterator = dataset
 
-    for _ in _bc_max_steps:
+    
+    for _ in range(self._bc_max_steps):
       transitions = next(self._iterator)
       self._bc_state, metrics = self._bc_update_step(self._bc_state, transitions)
 
@@ -316,7 +301,7 @@ class IQLLearner(acme.Learner):
 
 
   def update_old_policy(self):
-    self._state.old_policy_params = self._state.policy_params
+    self._state = self._state._replace(old_policy_params = self._state.policy_params)
 
 
   def step(self):

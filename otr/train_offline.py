@@ -17,7 +17,7 @@ from otr import dataset_utils
 from otr import evaluation
 from otr import experiment_utils
 from otr.agents import iql
-from otr.agents.iql import networks
+from otr.agents.iql import networks as networks1
 from otr.agents.otil import rewarder as rewarder_lib
 
 _CONFIG = config_flags.DEFINE_config_file("config", "configs/otr_iql_mujoco.py")
@@ -152,7 +152,7 @@ def main(_):
   networks = iql.make_networks(
       spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
 
-  bc_network = networks.make_bc_network(spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
+  bc_network = networks1.make_bc_network(spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
 
   
   counter = counting.Counter(time_delta=0.0)
@@ -169,6 +169,7 @@ def main(_):
   learner_counter = counting.Counter(counter, "learner", time_delta=0.0)
   learner = iql.IQLLearner(
       networks=networks,
+      bc_network=bc_network,
       random_key=key_learner,
       random_key_bc = key_bc,
       dataset=iterator,
