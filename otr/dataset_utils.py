@@ -209,3 +209,60 @@ class JaxInMemorySampler(Iterator[Any]):
   def __next__(self) -> Any:
     data, self._key = self._sample(self._key)
     return data
+
+
+import numpy as np
+
+def load_npz_file(file_path):
+    data = np.load(file_path)
+    observations = data['observations']
+    actions = data['actions']
+    rewards = data['rewards']
+    dones = data['dones']
+    infos = data['infos']
+    return {
+        'observations': observations,
+        'actions': actions,
+        'rewards': rewards,
+        'dones': dones,
+        'infos': infos,
+    }
+    
+def convert_dataset_to_trajectories(file_path):
+    # Extract data from the dataset
+    
+    dataset = load_npz_file(file_path)
+    observations = dataset['observations']
+    actions = dataset['actions']
+    rewards = dataset['rewards']
+    dones = dataset['dones']
+    infos = dataset['infos']
+    achieved_goals = infos['achieved_goal']
+    time_truncated = infos['time.truncated']
+
+    # Compute the 'terminals' array based on 'dones' and 'time.truncated'
+    terminals = np.logical_or(dones, time_truncated)
+
+    # Split the dataset into trajectories
+    trajs = [[]]
+    for i in range(len(observations)):
+        trajs[-1].append({
+            'observation': observations[i],
+            'action': actions[i],
+            'reward': rewards[i],
+            'discount': 0.0 if terminals[i] else 1.0,
+            'next_observation': observations[i+1] if i+1 < len(observations) else observations[i],
+        })
+        if terminals[i] and i + 1 < len(observations):
+            trajs.append([])
+
+    # Merge trajectories into a single dictionary
+    merged_trajectories = {
+        'observations': np.array([t['observation'] for traj in trajs for t in traj]),
+        'actions': np.array([t['action'] for traj in trajs for t in traj]),
+        'rewards': np.array([t['reward'] for traj in trajs for t in traj]),
+        'next_observations': np.array([t['next_observation'] for traj in trajs for t in traj]),
+        'terminals': np.array([t['discount'] for traj in trajs for t in traj]),
+    }
+
+    return merged_trajectories
