@@ -74,10 +74,11 @@ def qlearning_dataset_with_timeouts(env,
   reward_ = []
   done_ = []
   realdone_ = []
-  if "infos/goal" in dataset:
+  
+  if "infos/goal" in dataset:    
     if not disable_goal:
       dataset["observations"] = np.concatenate(
-          [dataset["observations"], dataset['infos/goal']], axis=1)
+          [dataset["observations"], dataset['infos/goal']], axis=1)   
     else:
       pass
       # dataset["observations"] = np.concatenate([
@@ -98,6 +99,7 @@ def qlearning_dataset_with_timeouts(env,
     done_bool = bool(dataset['terminals'][i])
     realdone_bool = bool(dataset['terminals'][i])
     if "infos/goal" in dataset:
+      
       final_timestep = True if (dataset['infos/goal'][i] !=
                                 dataset['infos/goal'][i + 1]).any() else False
     else:
@@ -120,7 +122,7 @@ def qlearning_dataset_with_timeouts(env,
     done_.append(done_bool)
     realdone_.append(realdone_bool)
     episode_step += 1
-
+  	
   return {
       'observations': np.array(obs_),
       'actions': np.array(action_),

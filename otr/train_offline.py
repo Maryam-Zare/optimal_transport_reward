@@ -62,6 +62,7 @@ def get_demonstration_dataset(config):
   else:
     # Load expert demonstrations
     offline_traj = dataset_utils.load_trajectories(expert_dataset_name)
+    
     if "antmaze" in offline_dataset_name:
       # 1/Distance (from the bottom-right corner) times return
       returns = [
@@ -72,11 +73,15 @@ def get_demonstration_dataset(config):
       ]
     else:
       returns = [sum([t.reward for t in traj]) for traj in offline_traj]
+      #returns = [traj[-1].reward for traj in offline_traj]
+      #print(returns)
     idx = np.argpartition(returns, -config.k)[-config.k:]
     demo_returns = [returns[i] for i in idx]
     print(f"demo returns {demo_returns}, mean {np.mean(demo_returns)}")
     expert_demo = [offline_traj[i] for i in idx]
-
+    
+    
+    
     episode_length = 1000
     if config.squashing_fn == 'linear':
       squashing_fn = functools.partial(
@@ -101,6 +106,8 @@ def get_demonstration_dataset(config):
     for i in tqdm.trange(len(offline_traj)):  # pylint: disable=all
       relabeled_traj = relabel_rewards(rewarder, offline_traj[i])
       relabeled_trajectories.append(relabeled_traj)
+    returns1 = [sum([t.reward for t in traj]) for traj in relabeled_trajectories]
+    #print(returns1)
     if "antmaze" in offline_dataset_name:
       reward_scale = compute_iql_reward_scale(relabeled_trajectories)
       reward_bias = -2.0
@@ -142,12 +149,13 @@ def main(_):
 
   iterator = dataset_utils.JaxInMemorySampler(dataset, key_demo,
                                               config.batch_size)
-
+  
   # Create an environment and grab the spec.
   environment = dataset_utils.make_environment(
       offline_dataset_name, seed=config.seed)
   # Create the networks to optimize.
   spec = acme.make_environment_spec(environment)
+  
   networks = iql.make_networks(
       spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
 
