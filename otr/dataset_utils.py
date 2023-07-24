@@ -238,10 +238,9 @@ def convert_dataset_to_trajectories(file_path):
   
     next_observations = np.roll(observations, -1, axis=0)
     next_observations[-1] = observations[0]
-    
     # Split the dataset into trajectories
     trajs = [[]]
-    for i in range(len(observations)):
+    for i in tqdm.tqdm(range(len(observations))):
         trajs[-1].append(
             types.Transition(
                 observation=observations[i],
@@ -250,7 +249,7 @@ def convert_dataset_to_trajectories(file_path):
                 discount=1.0 - dones[i].astype(np.float32),
                 next_observation=next_observations[i]
             ))
-        if dones[i] == 1.0 and i + 1 < len(observations):
+        if dones[i] == True and i + 1 < len(observations):
             trajs.append([])
 
     return trajs

@@ -64,16 +64,15 @@ def get_demonstration_dataset(config):
   else:
     # Load expert demonstrations
     offline_traj = dataset_utils.convert_dataset_to_trajectories(expert_dataset_name)
-    print(offline_traj)
+    #print(len(offline_traj),"############",offline_traj[0])
     
     returns = [sum([t.reward for t in traj]) for traj in offline_traj]
-      #returns = [traj[-1].reward for traj in offline_traj]
-    print(returns)
+    #returns = [traj[-1].reward for traj in offline_traj]
+    config.k=2
     idx = np.argpartition(returns, -config.k)[-config.k:]
     demo_returns = [returns[i] for i in idx]
     print(f"demo returns {demo_returns}, mean {np.mean(demo_returns)}")
     expert_demo = [offline_traj[i] for i in idx]
-    
     
     
     episode_length = 1000
@@ -95,7 +94,7 @@ def get_demonstration_dataset(config):
     rewarder = rewarder_lib.OTILRewarder(
         expert_demo, episode_length=episode_length, squashing_fn=squashing_fn)
 
-    offline_traj = dataset_utils.load_trajectories(offline_dataset_name)
+    offline_traj = dataset_utils.convert_dataset_to_trajectories(offline_dataset_name)
     relabeled_trajectories = []
     for i in tqdm.trange(len(offline_traj)):  # pylint: disable=all
       relabeled_traj = relabel_rewards(rewarder, offline_traj[i])
@@ -144,11 +143,13 @@ def main(_):
   iterator = dataset_utils.JaxInMemorySampler(dataset, key_demo,
                                               config.batch_size)
   
+  
   # Create an environment and grab the spec.
   environment = dataset_utils.make_environment(
       offline_dataset_name, seed=config.seed)
   # Create the networks to optimize.
   spec = acme.make_environment_spec(environment)
+  
   
   networks = iql.make_networks(
       spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
@@ -198,7 +199,7 @@ def main(_):
       counter=eval_counter,
       logger=logger_factory('eval_loop', eval_counter.get_steps_key(), 0),
   )
-
+  print("&&&&&&&&&&&&&&&&&&&&&&&&&")
   # Run the environment loop.
   steps = 0
   while steps < config.max_steps:
