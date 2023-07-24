@@ -257,12 +257,6 @@ def convert_dataset_to_trajectories(file_path):
             trajs.append([])
 
     # Merge trajectories into a single dictionary
-    merged_trajectories = {
-        'observations': np.array([t['observation'] for traj in trajs for t in traj]),
-        'actions': np.array([t['action'] for traj in trajs for t in traj]),
-        'rewards': np.array([t['reward'] for traj in trajs for t in traj]),
-        'next_observations': np.array([t['next_observation'] for traj in trajs for t in traj]),
-        'terminals': np.array([t['discount'] for traj in trajs for t in traj]),
-    }
+  
 
-    return merged_trajectories
+    return trajs
