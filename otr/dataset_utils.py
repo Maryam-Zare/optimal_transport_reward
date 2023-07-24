@@ -211,21 +211,20 @@ class JaxInMemorySampler(Iterator[Any]):
     return data
 
 
-import numpy as np
 
 def load_npz_file(file_path):
-    data = np.load(file_path)
+    data = np.load(file_path,allow_pickle=True)
     observations = data['observations']
+
     actions = data['actions']
     rewards = data['rewards']
     dones = data['dones']
-    infos = data['infos']
+    
     return {
         'observations': observations,
         'actions': actions,
         'rewards': rewards,
         'dones': dones,
-        'infos': infos,
     }
     
 def convert_dataset_to_trajectories(file_path):
@@ -236,27 +235,22 @@ def convert_dataset_to_trajectories(file_path):
     actions = dataset['actions']
     rewards = dataset['rewards']
     dones = dataset['dones']
-    infos = dataset['infos']
-    achieved_goals = infos['achieved_goal']
-    time_truncated = infos['time.truncated']
-
-    # Compute the 'terminals' array based on 'dones' and 'time.truncated'
-    terminals = np.logical_or(dones, time_truncated)
-
+  
+    next_observations = np.roll(observations, -1, axis=0)
+    next_observations[-1] = observations[0]
+    
     # Split the dataset into trajectories
     trajs = [[]]
     for i in range(len(observations)):
-        trajs[-1].append({
-            'observation': observations[i],
-            'action': actions[i],
-            'reward': rewards[i],
-            'discount': 0.0 if terminals[i] else 1.0,
-            'next_observation': observations[i+1] if i+1 < len(observations) else observations[i],
-        })
-        if terminals[i] and i + 1 < len(observations):
+        trajs[-1].append(
+            types.Transition(
+                observation=observations[i],
+                action=actions[i],
+                reward=rewards[i],
+                discount=1.0 - dones[i].astype(np.float32),
+                next_observation=next_observations[i]
+            ))
+        if dones[i] == 1.0 and i + 1 < len(observations):
             trajs.append([])
-
-    # Merge trajectories into a single dictionary
-  
 
     return trajs

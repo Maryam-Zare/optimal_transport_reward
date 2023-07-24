@@ -48,33 +48,27 @@ def compute_iql_reward_scale(trajs):
 
 def get_demonstration_dataset(config):
   """Return the relabeled offline dataset."""
-  expert_dataset_name = config.expert_dataset_name
-  offline_dataset_name = config.offline_dataset_name
+  
+  expert_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_100.npz"
+  offline_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_100.npz"
+  
   if config.use_dataset_reward:
-    offline_traj = dataset_utils.load_trajectories(offline_dataset_name)
-    if "antmaze" in offline_dataset_name:
-      reward_scale = 1.0
-      reward_bias = -1.0
-    else:
-      reward_scale = compute_iql_reward_scale(offline_traj)
-      reward_bias = 0.0
+    offline_traj = dataset_utils.convert_dataset_to_trajectories(offline_dataset_name)
+    # if "antmaze" in offline_dataset_name:
+    #   reward_scale = 1.0
+    #   reward_bias = -1.0
+    # else:
+    reward_scale = compute_iql_reward_scale(offline_traj)
+    reward_bias = 0.0
     relabeled_transitions = dataset_utils.merge_trajectories(offline_traj)
   else:
     # Load expert demonstrations
-    offline_traj = dataset_utils.load_trajectories(expert_dataset_name)
+    offline_traj = dataset_utils.convert_dataset_to_trajectories(expert_dataset_name)
+    print(offline_traj)
     
-    if "antmaze" in offline_dataset_name:
-      # 1/Distance (from the bottom-right corner) times return
-      returns = [
-          sum([t.reward
-               for t in traj]) /
-          (1e-4 + np.linalg.norm(traj[0].observation[:2]))
-          for traj in offline_traj
-      ]
-    else:
-      returns = [sum([t.reward for t in traj]) for traj in offline_traj]
+    returns = [sum([t.reward for t in traj]) for traj in offline_traj]
       #returns = [traj[-1].reward for traj in offline_traj]
-      #print(returns)
+    print(returns)
     idx = np.argpartition(returns, -config.k)[-config.k:]
     demo_returns = [returns[i] for i in idx]
     print(f"demo returns {demo_returns}, mean {np.mean(demo_returns)}")
