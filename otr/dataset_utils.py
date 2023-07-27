@@ -24,7 +24,8 @@ def get_d4rl_dataset(env):
 
 
 def make_environment(name: str, seed: Optional[int] = None):
-  environment = gym.make(name)
+  #environment = gym.make(name)
+  environment = gym.make(name,render_mode='human')
   if seed is not None:
     environment.seed(seed)
   environment = wrappers.GymWrapper(environment)
@@ -240,6 +241,7 @@ def convert_dataset_to_trajectories(file_path):
     next_observations[-1] = observations[0]
     # Split the dataset into trajectories
     trajs = [[]]
+    #print(np.count_nonzero(dones),"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$",*(np.where(dones)[0]+1)/500)
     for i in tqdm.tqdm(range(len(observations))):
         trajs[-1].append(
             types.Transition(

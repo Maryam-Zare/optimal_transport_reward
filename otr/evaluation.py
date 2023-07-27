@@ -46,12 +46,13 @@ class D4RLEvalLoop(core.Worker):
         steps=total_episode_steps, episodes=num_episodes)
     average_episode_return = total_episode_return / num_episodes
     average_episode_steps = total_episode_steps / num_episodes
-    average_normalized_return = self._environment.get_normalized_score(
-        average_episode_return)
+    
+    # average_normalized_return = self._environment.get_normalized_score(
+    #     average_episode_return)
     
     result = {
         "average_episode_return": average_episode_return,
-        "average_normalized_return": average_normalized_return,
+        #"average_normalized_return": average_normalized_return,
         "average_episode_length": average_episode_steps,
         "steps_per_second": steps_per_second,
     }

@@ -64,14 +64,13 @@ def get_demonstration_dataset(config):
   else:
     # Load expert demonstrations
     offline_traj = dataset_utils.convert_dataset_to_trajectories(expert_dataset_name)
-    #print(len(offline_traj),"############",offline_traj[0])
+    #print(len(offline_traj[0]),"############",offline_traj[0])
     
     returns = [sum([t.reward for t in traj]) for traj in offline_traj]
     #returns = [traj[-1].reward for traj in offline_traj]
-    config.k=2
     idx = np.argpartition(returns, -config.k)[-config.k:]
     demo_returns = [returns[i] for i in idx]
-    print(f"demo returns {demo_returns}, mean {np.mean(demo_returns)}")
+    #print(f"demo returns {demo_returns}, mean {np.mean(demo_returns)}")
     expert_demo = [offline_traj[i] for i in idx]
     
     
@@ -101,7 +100,7 @@ def get_demonstration_dataset(config):
       relabeled_trajectories.append(relabeled_traj)
     returns1 = [sum([t.reward for t in traj]) for traj in relabeled_trajectories]
     #print(returns1)
-    if "antmaze" in offline_dataset_name:
+    if "surrol" in offline_dataset_name:
       reward_scale = compute_iql_reward_scale(relabeled_trajectories)
       reward_bias = -2.0
     else:
@@ -117,7 +116,6 @@ def get_demonstration_dataset(config):
 
 def main(_):
   config = _CONFIG.value
-  offline_dataset_name = config.offline_dataset_name
   workdir = _WORKDIR.value
   log_to_wandb = config.log_to_wandb
 
@@ -146,10 +144,9 @@ def main(_):
   
   # Create an environment and grab the spec.
   environment = dataset_utils.make_environment(
-      offline_dataset_name, seed=config.seed)
+      'ActiveTrack-v0', seed=config.seed)
   # Create the networks to optimize.
   spec = acme.make_environment_spec(environment)
-  
   
   networks = iql.make_networks(
       spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
@@ -199,7 +196,7 @@ def main(_):
       counter=eval_counter,
       logger=logger_factory('eval_loop', eval_counter.get_steps_key(), 0),
   )
-  print("&&&&&&&&&&&&&&&&&&&&&&&&&")
+  
   # Run the environment loop.
   steps = 0
   while steps < config.max_steps:
