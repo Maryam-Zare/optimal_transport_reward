@@ -39,7 +39,7 @@ class D4RLEvalLoop(core.Worker):
         self._actor.observe(action, timestep)
         total_episode_steps += 1
         total_episode_return += timestep.reward
-      
+      self._environment.plott()
 
     steps_per_second = total_episode_steps / (time.time() - start_time)
     counts = self._counter.increment(

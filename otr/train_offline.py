@@ -49,8 +49,8 @@ def compute_iql_reward_scale(trajs):
 def get_demonstration_dataset(config):
   """Return the relabeled offline dataset."""
   
-  expert_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_100.npz"
-  offline_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_100.npz"
+  expert_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
+  offline_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
   
   if config.use_dataset_reward:
     offline_traj = dataset_utils.convert_dataset_to_trajectories(offline_dataset_name)
@@ -65,12 +65,12 @@ def get_demonstration_dataset(config):
     # Load expert demonstrations
     offline_traj = dataset_utils.convert_dataset_to_trajectories(expert_dataset_name)
     #print(len(offline_traj[0]),"############",offline_traj[0])
-    
+
     returns = [sum([t.reward for t in traj]) for traj in offline_traj]
     #returns = [traj[-1].reward for traj in offline_traj]
     idx = np.argpartition(returns, -config.k)[-config.k:]
     demo_returns = [returns[i] for i in idx]
-    #print(f"demo returns {demo_returns}, mean {np.mean(demo_returns)}")
+    print(f"demo returns {demo_returns}, mean {np.mean(demo_returns)}")
     expert_demo = [offline_traj[i] for i in idx]
     
     
@@ -95,11 +95,12 @@ def get_demonstration_dataset(config):
 
     offline_traj = dataset_utils.convert_dataset_to_trajectories(offline_dataset_name)
     relabeled_trajectories = []
+    x = [sum([t.reward for t in traj]) for traj in offline_traj]
+    
     for i in tqdm.trange(len(offline_traj)):  # pylint: disable=all
       relabeled_traj = relabel_rewards(rewarder, offline_traj[i])
       relabeled_trajectories.append(relabeled_traj)
-    returns1 = [sum([t.reward for t in traj]) for traj in relabeled_trajectories]
-    #print(returns1)
+   
     if "surrol" in offline_dataset_name:
       reward_scale = compute_iql_reward_scale(relabeled_trajectories)
       reward_bias = -2.0
