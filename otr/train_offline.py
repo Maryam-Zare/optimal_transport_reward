@@ -19,6 +19,12 @@ from otr import experiment_utils
 from otr.agents import iql
 from otr.agents.otil import rewarder as rewarder_lib
 
+#*********************************************************************************************
+import pandas as pd
+from skopt import gp_minimize
+#*********************************************************************************************
+
+
 _CONFIG = config_flags.DEFINE_config_file("config", "configs/otr_iql_mujoco.py")
 _WORKDIR = flags.DEFINE_string('workdir', '/tmp/otr', '')
 
@@ -161,50 +167,86 @@ def main(_):
                                    optax.scale_by_schedule(schedule_fn))
   else:
     policy_optimizer = optax.adam(config.actor_lr)
+    
+    
+  #********************************************************************************************* 
+  def objective_function(op_config): 
+    global optimization_stage  
+    config.iql_kwargs = dict( 
+      temperature=op_config[0],
+      expectile=op_config[1],
+      discount=op_config[2], )  
+    config.dropout_rate = op_config[3]
+    config.alpha = op_config[4]
+    config.beta = op_config[5]
+    print(f'\n\n\n---------------- Optimization Stage {optimization_stage}-------------------------------------------\n')   
+    optimization_stage += 1 
+    # print(config.alpha) 
 
-  # Create the learner.
-  learner_counter = counting.Counter(counter, "learner", time_delta=0.0)
-  learner = iql.IQLLearner(
-      networks=networks,
-      random_key=key_learner,
-      dataset=iterator,
-      policy_optimizer=policy_optimizer,
-      critic_optimizer=optax.adam(config.critic_lr),
-      value_optimizer=optax.adam(config.value_lr),
-      **config.iql_kwargs,
-      logger=logger_factory('learner', learner_counter.get_steps_key(), 0),
-      counter=learner_counter,
-  )
+    # Create the learner.
+    learner_counter = counting.Counter(counter, "learner", time_delta=0.0)
+    learner = iql.IQLLearner(
+        networks=networks,
+        random_key=key_learner,
+        dataset=iterator,
+        policy_optimizer=policy_optimizer,
+        critic_optimizer=optax.adam(config.critic_lr),
+        value_optimizer=optax.adam(config.value_lr),
+        **config.iql_kwargs,
+        logger=logger_factory('learner', learner_counter.get_steps_key(), 0),
+        counter=learner_counter,
+    )
 
-  def evaluator_network(params, key, observation):
-    del key
-    action_distribution = networks.policy_network.apply(
-        params, observation, is_training=False)
-    return action_distribution.mode()
+    def evaluator_network(params, key, observation):
+      del key
+      action_distribution = networks.policy_network.apply(
+          params, observation, is_training=False)
+      return action_distribution.mode()
 
-  eval_actor = actors.GenericActor(
-      actor_core_lib.batched_feed_forward_to_actor_core(evaluator_network),
-      random_key=key,
-      variable_client=variable_utils.VariableClient(
-          learner, "policy", device="cpu"),
-      backend="cpu",
-  )
+    eval_actor = actors.GenericActor(
+        actor_core_lib.batched_feed_forward_to_actor_core(evaluator_network),
+        random_key=key,
+        variable_client=variable_utils.VariableClient(
+            learner, "policy", device="cpu"),
+        backend="cpu",
+    )
 
-  eval_counter = counting.Counter(counter, "eval_loop", time_delta=0.0)
-  eval_loop = evaluation.D4RLEvalLoop(
-      environment,
-      eval_actor,
-      counter=eval_counter,
-      logger=logger_factory('eval_loop', eval_counter.get_steps_key(), 0),
-  )
-  
-  # Run the environment loop.
-  steps = 0
-  while steps < config.max_steps:
-    for _ in range(config.evaluate_every):
-      learner.step()
-    steps += config.evaluate_every
-    eval_loop.run(config.evaluation_episodes)
+    eval_counter = counting.Counter(counter, "eval_loop", time_delta=0.0)
+    eval_loop = evaluation.D4RLEvalLoop(
+        environment,
+        eval_actor,
+        counter=eval_counter,
+        logger=logger_factory('eval_loop', eval_counter.get_steps_key(), 0),
+    )
+    
+    # Run the environment loop.
+    steps = 0
+    while steps < config.max_steps:
+      for _ in range(config.evaluate_every):
+        learner.step()
+      steps += config.evaluate_every
+      average_normalized_return = eval_loop.run(config.evaluation_episodes)
+    return average_normalized_return
+
+
+  config_names = ['temperature', 'expectile', 'discount', 'dropout_rate', 'alpha', 'beta']
+  op_config_space = [(0.0, 10000), (0.5, 1), (0.9, 0.99999), (0.0, 1.0), (1.0, 5.0), (1.0, 5.0)]  
+  result = gp_minimize(
+      objective_function,         
+      op_config_space,                  
+      n_calls=10,          
+      random_state=1234       
+  )  
+  print("Optimal inputs:", result.x)
+  print("Optimal objective value:", result.fun)
+  result_df = pd.DataFrame(zip(config_names, result.x))
+  result_df.to_csv('op_results/bo_result.csv')
+  #*********************************************************************************************
+
+#*********************************************************************************************
+optimization_stage = 1
+#*********************************************************************************************
+
 
 
 if __name__ == '__main__':
