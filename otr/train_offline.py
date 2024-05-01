@@ -139,38 +139,43 @@ def main(_):
       learner_time_delta=10,
       evaluator_time_delta=0)
 
-  dataset = get_demonstration_dataset(config)
+  def objective_function(op_config):
+    
+    config.dropout_rate = op_config[3]
+    config.alpha = op_config[4]
+    config.beta = op_config[5]
+    dataset = get_demonstration_dataset(config)
 
-  # Create dataset iterator for the relabeled dataset
-  key = jax.random.PRNGKey(config.seed)
-  key_learner, key_demo, key = jax.random.split(key, 3)
+    # Create dataset iterator for the relabeled dataset
+    key = jax.random.PRNGKey(config.seed)
+    key_learner, key_demo, key = jax.random.split(key, 3)
 
-  iterator = dataset_utils.JaxInMemorySampler(dataset, key_demo,
-                                              config.batch_size)
-  
-  
-  # Create an environment and grab the spec.
-  environment = dataset_utils.make_environment(
-      'ActiveTrack-v0', seed=config.seed)
-  # Create the networks to optimize.
-  spec = acme.make_environment_spec(environment)
-  
-  networks = iql.make_networks(
-      spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
+    iterator = dataset_utils.JaxInMemorySampler(dataset, key_demo,
+                                                config.batch_size)
+    
+    
+    # Create an environment and grab the spec.
+    environment = dataset_utils.make_environment(
+        'ActiveTrack-v0', seed=config.seed)
+    # Create the networks to optimize.
+    spec = acme.make_environment_spec(environment)
+    
+    networks = iql.make_networks(
+        spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
 
-  counter = counting.Counter(time_delta=0.0)
+    counter = counting.Counter(time_delta=0.0)
 
-  if config.opt_decay_schedule == "cosine":
-    schedule_fn = optax.cosine_decay_schedule(-config.actor_lr,
-                                              config.max_steps)
-    policy_optimizer = optax.chain(optax.scale_by_adam(),
-                                   optax.scale_by_schedule(schedule_fn))
-  else:
-    policy_optimizer = optax.adam(config.actor_lr)
+    if config.opt_decay_schedule == "cosine":
+      schedule_fn = optax.cosine_decay_schedule(-config.actor_lr,
+                                                config.max_steps)
+      policy_optimizer = optax.chain(optax.scale_by_adam(),
+                                    optax.scale_by_schedule(schedule_fn))
+    else:
+      policy_optimizer = optax.adam(config.actor_lr)
     
     
   #********************************************************************************************* 
-  def objective_function(op_config): 
+   
     global optimization_stage  
     config.iql_kwargs = dict( 
       temperature=op_config[0],
@@ -226,7 +231,7 @@ def main(_):
         learner.step()
       steps += config.evaluate_every
       average_normalized_return = eval_loop.run(config.evaluation_episodes)
-    return average_normalized_return
+    return -1 * average_normalized_return
 
 
   config_names = ['temperature', 'expectile', 'discount', 'dropout_rate', 'alpha', 'beta']

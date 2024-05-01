@@ -60,5 +60,6 @@ class D4RLEvalLoop(core.Worker):
     self._logger.write(result)
 
     #*********************************************************************************************
-    return average_normalized_return  
+    return  average_episode_return
+  
     #*********************************************************************************************
