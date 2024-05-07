@@ -9,7 +9,7 @@ def get_config():
   config.max_steps = int(1e6)
   config.evaluate_every = int(5e4)
   config.evaluation_episodes = 10
-  config.seed = 0
+  config.seed = 9
   config.use_dataset_reward = False
   config.wandb_project = 'otr'
   config.wandb_entity = None
@@ -18,21 +18,21 @@ def get_config():
   config.k = 10
 
   config.squashing_fn = 'exponential'
-  config.alpha = 5.0
+  config.alpha = 2.7
   config.beta = 1.0
   config.normalize_by_atom = False
 
   # IQL config
   config.opt_decay_schedule = "cosine"
-  config.dropout_rate = None
+  config.dropout_rate = 0.05
   config.actor_lr = 3e-4
   config.value_lr = 3e-4
   config.critic_lr = 3e-4
   config.hidden_dims = (256, 256)
   config.iql_kwargs = dict(
-      discount=0.99,
+      discount=0.90,
       expectile=0.9,  # The actual tau for expectiles.
-      temperature=10.0)
+      temperature=3310)
   config.log_to_wandb = False
   return config
 
