@@ -22,6 +22,8 @@ from otr.agents.otil import rewarder as rewarder_lib
 #*********************************************************************************************
 import pandas as pd
 from skopt import gp_minimize
+from skopt.space import Real, Integer, Categorical
+
 #*********************************************************************************************
 
 
@@ -144,6 +146,7 @@ def main(_):
     config.dropout_rate = op_config[3]
     config.alpha = op_config[4]
     config.beta = op_config[5]
+    config.batch_size = op_config[6]
     dataset = get_demonstration_dataset(config)
 
     # Create dataset iterator for the relabeled dataset
@@ -181,9 +184,7 @@ def main(_):
       temperature=op_config[0],
       expectile=op_config[1],
       discount=op_config[2], )  
-    config.dropout_rate = op_config[3]
-    config.alpha = op_config[4]
-    config.beta = op_config[5]
+ 
     print(f'\n\n\n---------------- Optimization Stage {optimization_stage}-------------------------------------------\n')   
     optimization_stage += 1 
     # print(config.alpha) 
@@ -234,8 +235,8 @@ def main(_):
     return -1 * average_normalized_return
 
 
-  config_names = ['temperature', 'expectile', 'discount', 'dropout_rate', 'alpha', 'beta']
-  op_config_space = [(0.0, 10000), (0.5, 1), (0.9, 0.99999), (0.0, 1.0), (1.0, 5.0), (1.0, 5.0)]  
+  config_names = ['temperature', 'expectile', 'discount', 'dropout_rate', 'alpha', 'beta', 'batch_size']
+  op_config_space = [(0.0, 5000), (0.5, 1), (0.9, 0.99999), (0.0, 1.0), (1.0, 5.0), (1.0, 5.0),Categorical([64, 128, 256])]  
   result = gp_minimize(
       objective_function,         
       op_config_space,                  
