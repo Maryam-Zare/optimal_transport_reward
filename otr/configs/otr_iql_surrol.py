@@ -6,7 +6,7 @@ _NUM_SEEDS = 10
 def get_config():
   config = config_dict.ConfigDict()
   config.batch_size = 256
-  config.max_steps = int(1e6)
+  config.max_steps = int(1e2)
   config.evaluate_every = int(5e4)
   config.evaluation_episodes = 10
   config.seed = 0
