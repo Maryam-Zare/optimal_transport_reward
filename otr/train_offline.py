@@ -243,14 +243,14 @@ def save_hyperparameters_to_csv(study, log_dir):
     print(f"Optimal hyperparameters saved to {filepath}")
     
 if __name__ == '__main__':
-    study = optuna.create_study(direction='maximize')
-    study.optimize(objective_function, n_trials=10)
-    
-    save_hyperparameters(study, 'optimal_params')
-    
-    print("Best trial:")
-    trial = study.best_trial
-    print("  Value: ", -1 * trial.value)
-    print("  Params: ")
-    for key, value in trial.params.items():
-        print("    {}: {}".format(key, value))
+  study = optuna.create_study(direction='maximize')
+  study.optimize(objective_function, n_trials=10)
+  
+  save_hyperparameters(study, 'optimal_params')
+  
+  print("Best trial:")
+  trial = study.best_trial
+  print("  Value: ", -1 * trial.value)
+  print("  Params: ")
+  for key, value in trial.params.items():
+      print("    {}: {}".format(key, value))
