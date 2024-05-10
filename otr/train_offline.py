@@ -215,42 +215,52 @@ def objective_function(trial):
 optimization_stage = 1
 
 def save_hyperparameters_to_csv(study, log_dir):
-    # Create directory if it doesn't exist
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    
-    # Get the best trial
-    trial = study.best_trial
-    
-    # Construct a dictionary of the best parameters
-    best_params = trial.params
-    best_params['value'] = trial.value  # You might also want to store the best objective value
+  # Create directory if it doesn't exist
+  if not os.path.exists(log_dir):
+      os.makedirs(log_dir)
+  
+  # Get the best trial
+  trial = study.best_trial
+  
+  # Construct a dictionary of the best parameters
+  best_params = trial.params
+  best_params['value'] = trial.value  # You might also want to store the best objective value
 
-    # Use timestamp to create a unique filename for each set of hyperparameters
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"optimal_hyperparameters_{timestamp}.csv"
-    filepath = os.path.join(log_dir, filename)
+  # Use timestamp to create a unique filename for each set of hyperparameters
+  timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+  filename = f"optimal_hyperparameters_{timestamp}.csv"
+  filepath = os.path.join(log_dir, filename)
+  
+  # Write the dictionary to a CSV file
+  with open(filepath, 'w', newline='') as csvfile:
+      writer = csv.writer(csvfile)
+      # Write the header
+      writer.writerow(['Parameter', 'Value'])
+      # Write each parameter and the final value
+      for key, val in best_params.items():
+          writer.writerow([key, val])
+  
+  print(f"Optimal hyperparameters saved to {filepath}")
+  
     
-    # Write the dictionary to a CSV file
-    with open(filepath, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        # Write the header
-        writer.writerow(['Parameter', 'Value'])
-        # Write each parameter and the final value
-        for key, val in best_params.items():
-            writer.writerow([key, val])
-    
-    print(f"Optimal hyperparameters saved to {filepath}")
-    
-if __name__ == '__main__':
+def main(argv):
+  """Main function to handle flag parsing and initiate the study."""
+  # It's crucial to call this to ensure flags are parsed.
+  flags.FLAGS(argv)
+
+  # Now proceed with setting up the study and optimizing
   study = optuna.create_study(direction='maximize')
   study.optimize(objective_function, n_trials=10)
   
-  save_hyperparameters(study, 'optimal_params')
-  
+  save_hyperparameters_to_csv(study, 'optimal_params')
+
   print("Best trial:")
   trial = study.best_trial
   print("  Value: ", -1 * trial.value)
   print("  Params: ")
   for key, value in trial.params.items():
       print("    {}: {}".format(key, value))
+
+if __name__ == '__main__':
+    app.run(main)    
+
