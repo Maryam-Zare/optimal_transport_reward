@@ -1,3 +1,5 @@
+import functools
+
 from absl import app
 from absl import flags
 import acme
@@ -123,9 +125,9 @@ def objective_function(trial):
       learner_time_delta=10,
       evaluator_time_delta=0)
 
-  config.dropout_rate = trial.suggest_uniform('dropout_rate', 0.0, 0.5)
-  config.alpha = trial.suggest_uniform('alpha', 1.0, 5.0)
-  config.beta = trial.suggest_uniform('beta', 1.0, 5.0)
+  config.dropout_rate = trial.suggest_float('dropout_rate', 0.0, 0.5, step = 0.1)
+  config.alpha = trial.suggest_float('alpha', 1.0, 5.0, step = 0.5)
+  config.beta = trial.suggest_float('beta', 1.0, 5.0, step = 0.5)
   config.batch_size = trial.suggest_categorical('batch_size', [64, 128, 256])
 
   dataset = get_demonstration_dataset(config)
@@ -158,9 +160,9 @@ def objective_function(trial):
 
   global optimization_stage
   config.iql_kwargs = dict(
-      temperature=trial.suggest_int('temperature', 0, 15),
-      expectile=trial.suggest_uniform('expectile', 0.5, 1.0),
-      discount=trial.suggest_uniform('discount', 0.9, 0.99)
+      temperature=trial.suggest_int('temperature', 0, 15, step=1),
+      expectile=trial.suggest_float('expectile', 0.5, 1.0,step=0.1),
+      discount=trial.suggest_float('discount', 0.9, 0.99,step=0.02)
   )
 
   print(f'\n\n\n---------------- Optimization Stage {optimization_stage}-------------------------------------------\n')
