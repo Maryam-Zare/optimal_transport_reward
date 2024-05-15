@@ -251,8 +251,12 @@ def main(argv):
   flags.FLAGS(argv)
 
   # Now proceed with setting up the study and optimizing
-  study = optuna.create_study(direction='maximize')
-  study.optimize(objective_function, n_trials=10)
+  study_name = "your_study_name"
+  storage_name = "sqlite:///your_study.db"  # SQLite database URL or other storage location
+
+
+  study = optuna.create_study(study_name=study_name, storage=storage_name,direction='maximize')
+  study.optimize(objective_function, n_trials=5)
   
   save_hyperparameters_to_csv(study, 'optimal_params')
 
@@ -262,6 +266,8 @@ def main(argv):
   print("  Params: ")
   for key, value in trial.params.items():
       print("    {}: {}".format(key, value))
+      
+  
 
 if __name__ == '__main__':
     app.run(main)    

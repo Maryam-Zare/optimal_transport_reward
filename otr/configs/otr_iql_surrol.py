@@ -6,9 +6,9 @@ _NUM_SEEDS = 10
 def get_config():
   config = config_dict.ConfigDict()
   config.batch_size = 256
-  config.max_steps = int(1e2)
+  config.max_steps = int(1e6)
   config.evaluate_every = int(5e4)
-  config.evaluation_episodes = 10
+  config.evaluation_episodes = 15
   config.seed = 0
   config.use_dataset_reward = False
   config.wandb_project = 'otr'
