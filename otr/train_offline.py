@@ -245,6 +245,7 @@ def save_hyperparameters_to_csv(study, log_dir):
       # Write each parameter and the final value
       for key, val in best_params.items():
           writer.writerow([key, val])
+          
   
   print(f"Optimal hyperparameters saved to {filepath}")
   
