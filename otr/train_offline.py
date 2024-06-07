@@ -125,10 +125,10 @@ def objective_function(trial):
       learner_time_delta=10,
       evaluator_time_delta=0)
 
-  config.dropout_rate = trial.suggest_float('dropout_rate', 0.0, 0.5, step = 0.1)
-  config.alpha = trial.suggest_float('alpha', 1.0, 5.0, step = 0.5)
-  config.beta = trial.suggest_float('beta', 1.0, 5.0, step = 0.5)
-  config.batch_size = trial.suggest_categorical('batch_size', [64, 128, 256])
+ #config.dropout_rate = trial.suggest_float('dropout_rate', 0.0, 0.5, step = 0.1)
+  config.alpha = 5#trial.suggest_int('alpha', 3.0, 5.0, step = 1)
+  config.beta = 2 #trial.suggest_int('beta', 1.0, 2.0, step = 1)
+  config.batch_size = 256#trial.suggest_categorical('batch_size', [64, 128, 256])
 
   dataset = get_demonstration_dataset(config)
 
@@ -160,9 +160,12 @@ def objective_function(trial):
 
   global optimization_stage
   config.iql_kwargs = dict(
-      temperature=trial.suggest_int('temperature', 0, 15, step=1),
-      expectile=trial.suggest_float('expectile', 0.5, 1.0,step=0.1),
-      discount=trial.suggest_float('discount', 0.9, 0.99,step=0.02)
+      temperature=trial.suggest_int('temperature', 3, 10, step=1),
+    #  temperature=config.iql_kwargs['temperature'],
+      expectile=trial.suggest_float('expectile', 0.7, 0.9,step=0.1),
+    #  expectile=config.iql_kwargs['expectile']
+      discount=trial.suggest_float('discount', 0.9, 0.96,step=0.02)
+      #discount=config.iql_kwargs['discount']
   )
 
   print(f'\n\n\n---------------- Optimization Stage {optimization_stage}-------------------------------------------\n')
@@ -211,6 +214,7 @@ def objective_function(trial):
           learner.step()
       steps += config.evaluate_every
       average_normalized_return = eval_loop.run(config.evaluation_episodes)
+      trial.report(average_normalized_return, step=steps)
   return average_normalized_return
 
 
@@ -251,18 +255,18 @@ def main(argv):
   flags.FLAGS(argv)
 
   # Now proceed with setting up the study and optimizing
-  study_name = "your_study_name"
-  storage_name = "sqlite:///your_study.db"  # SQLite database URL or other storage location
+  study_name = "TempExpecDiscount"
+  storage_name = "sqlite:///otr.db"  # SQLite database URL or other storage location
 
 
   study = optuna.create_study(study_name=study_name, storage=storage_name,direction='maximize')
-  study.optimize(objective_function, n_trials=5)
+  study.optimize(objective_function, n_trials=100)
   
   save_hyperparameters_to_csv(study, 'optimal_params')
 
   print("Best trial:")
   trial = study.best_trial
-  print("  Value: ", -1 * trial.value)
+  print("  Value: ", trial.value)
   print("  Params: ")
   for key, value in trial.params.items():
       print("    {}: {}".format(key, value))

@@ -1,0 +1,4 @@
+Parameter,Value
+batch_size,256
+temperature,3
+value,456.8612722436587

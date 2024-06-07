@@ -7,7 +7,7 @@ def get_config():
   config = config_dict.ConfigDict()
   config.batch_size = 256
   config.max_steps = int(1e6)
-  config.evaluate_every = int(5e4)
+  config.evaluate_every = int(1e5)
   config.evaluation_episodes = 15
   config.seed = 0
   config.use_dataset_reward = False
