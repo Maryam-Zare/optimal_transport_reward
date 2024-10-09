@@ -146,7 +146,7 @@ def objective_function(trial):
   spec = acme.make_environment_spec(environment)
 
 
-  config.actor_lr = trial.suggest_loguniform('learning_rate', 1e-6, 1e-2)
+  config.actor_lr = trial.suggest_loguniform('actorlearning_rate', 1e-6, 1e-2)
   
   
   networks = iql.make_networks(
@@ -172,8 +172,8 @@ def objective_function(trial):
       #discount=config.iql_kwargs['discount']
   )
   
-  config.critic_lr = trial.suggest_loguniform('learning_rate', 1e-6, 1e-2)
-  config.value_lr = trial.suggest_loguniform('learning_rate', 1e-6, 1e-2)
+  config.critic_lr = trial.suggest_loguniform('criticlearning_rate', 1e-6, 1e-2)
+  config.value_lr = trial.suggest_loguniform('valuelearning_rate', 1e-6, 1e-2)
 
 
 
