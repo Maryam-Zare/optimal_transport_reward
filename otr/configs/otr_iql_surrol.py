@@ -5,7 +5,7 @@ _NUM_SEEDS = 10
 
 def get_config():
   config = config_dict.ConfigDict()
-  config.batch_size = 256
+  config.batch_size = 64
   config.max_steps = int(1e6)
   config.evaluate_every = int(5e4)
   config.evaluation_episodes = 10
@@ -18,13 +18,13 @@ def get_config():
   config.k = 10
 
   config.squashing_fn = 'exponential'
-  config.alpha = 2.1
-  config.beta = 1.98
+  config.alpha = 3
+  config.beta = 5
   config.normalize_by_atom = False
 
   # IQL config
   config.opt_decay_schedule = "cosine"
-  config.dropout_rate = 0.05
+  config.dropout_rate = None
   config.actor_lr = 3e-4
   config.value_lr = 3e-4
   config.critic_lr = 3e-4
@@ -32,7 +32,7 @@ def get_config():
   config.iql_kwargs = dict(
       discount=0.94,
       expectile=0.52,  # The actual tau for expectiles.
-      temperature=491)
+      temperature=6)
   config.log_to_wandb = False
   return config
 
