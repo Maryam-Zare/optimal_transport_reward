@@ -125,10 +125,10 @@ def objective_function(trial):
       learner_time_delta=10,
       evaluator_time_delta=0)
 
- #config.dropout_rate = trial.suggest_float('dropout_rate', 0.0, 0.5, step = 0.1)
-  config.alpha = 5#trial.suggest_int('alpha', 3.0, 5.0, step = 1)
-  config.beta = 2 #trial.suggest_int('beta', 1.0, 2.0, step = 1)
-  config.batch_size = 256#trial.suggest_categorical('batch_size', [64, 128, 256])
+  config.dropout_rate = trial.suggest_float('dropout_rate', 0.0, 0.1, step = 0.1)
+  config.alpha = trial.suggest_int('alpha', 2.0, 5.0, step = 1)
+  config.beta = trial.suggest_int('beta', 1.0, 5.0, step = 1)
+  config.batch_size = trial.suggest_categorical('batch_size', [64, 128, 256])
 
   dataset = get_demonstration_dataset(config)
 
@@ -145,6 +145,10 @@ def objective_function(trial):
   # Create the networks to optimize.
   spec = acme.make_environment_spec(environment)
 
+
+  config.actor_lr = trial.suggest_loguniform('learning_rate', 1e-6, 1e-2)
+  
+  
   networks = iql.make_networks(
       spec, hidden_dims=config.hidden_dims, dropout_rate=config.dropout_rate)
 
@@ -160,13 +164,18 @@ def objective_function(trial):
 
   global optimization_stage
   config.iql_kwargs = dict(
-      temperature=trial.suggest_int('temperature', 3, 10, step=1),
+      temperature=trial.suggest_int('temperature', 1, 10, step=1),
     #  temperature=config.iql_kwargs['temperature'],
       expectile=trial.suggest_float('expectile', 0.7, 0.9,step=0.1),
     #  expectile=config.iql_kwargs['expectile']
       discount=trial.suggest_float('discount', 0.9, 0.96,step=0.02)
       #discount=config.iql_kwargs['discount']
   )
+  
+  config.critic_lr = trial.suggest_loguniform('learning_rate', 1e-6, 1e-2)
+  config.value_lr = trial.suggest_loguniform('learning_rate', 1e-6, 1e-2)
+
+
 
   print(f'\n\n\n---------------- Optimization Stage {optimization_stage}-------------------------------------------\n')
   optimization_stage += 1
@@ -256,7 +265,7 @@ def main(argv):
   flags.FLAGS(argv)
 
   # Now proceed with setting up the study and optimizing
-  study_name = "TempExpecDiscount"
+  study_name = "Everything100trialwithLRss"
   storage_name = "sqlite:///otr.db"  # SQLite database URL or other storage location
 
 

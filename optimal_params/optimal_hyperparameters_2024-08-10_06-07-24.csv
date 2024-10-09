@@ -1,0 +1,9 @@
+Parameter,Value
+dropout_rate,0.0
+alpha,3
+beta,1
+batch_size,64
+temperature,6
+expectile,0.7999999999999999
+discount,0.96
+value,461.2729373772939
