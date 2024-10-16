@@ -125,8 +125,8 @@ def objective_function(trial):
       learner_time_delta=10,
       evaluator_time_delta=0)
 
-  config.dropout_rate = trial.suggest_float('dropout_rate', 0.0, 0.1, step = 0.1)
-  config.alpha = trial.suggest_int('alpha', 2.0, 5.0, step = 1)
+  
+  config.alpha = trial.suggest_int('alpha', 1.0, 5.0, step = 1)
   config.beta = trial.suggest_int('beta', 1.0, 5.0, step = 1)
   config.batch_size = trial.suggest_categorical('batch_size', [64, 128, 256])
 
@@ -146,7 +146,7 @@ def objective_function(trial):
   spec = acme.make_environment_spec(environment)
 
 
-  config.actor_lr = trial.suggest_loguniform('actorlearning_rate', 1e-6, 1e-2)
+  config.actor_lr = trial.suggest_loguniform('actorlearning_rate', 1e-6, 1e-3)
   
   
   networks = iql.make_networks(
@@ -166,14 +166,14 @@ def objective_function(trial):
   config.iql_kwargs = dict(
       temperature=trial.suggest_int('temperature', 1, 10, step=1),
     #  temperature=config.iql_kwargs['temperature'],
-      expectile=trial.suggest_float('expectile', 0.7, 0.9,step=0.1),
+      expectile=trial.suggest_float('expectile', 0.6, 0.9,step=0.1),
     #  expectile=config.iql_kwargs['expectile']
       discount=trial.suggest_float('discount', 0.9, 0.96,step=0.02)
       #discount=config.iql_kwargs['discount']
   )
   
-  config.critic_lr = trial.suggest_loguniform('criticlearning_rate', 1e-6, 1e-2)
-  config.value_lr = trial.suggest_loguniform('valuelearning_rate', 1e-6, 1e-2)
+  config.critic_lr = trial.suggest_loguniform('criticlearning_rate', 1e-6, 1e-3)
+  config.value_lr = trial.suggest_loguniform('valuelearning_rate', 1e-6, 1e-3)
 
 
 
@@ -265,12 +265,12 @@ def main(argv):
   flags.FLAGS(argv)
 
   # Now proceed with setting up the study and optimizing
-  study_name = "Everything100trialwithLRss"
+  study_name = "Everything150trialwithLR"
   storage_name = "sqlite:///otr.db"  # SQLite database URL or other storage location
 
 
   study = optuna.create_study(study_name=study_name, storage=storage_name,direction='maximize')
-  study.optimize(objective_function, n_trials=100)
+  study.optimize(objective_function, n_trials=150)
   
   save_hyperparameters_to_csv(study, 'optimal_params')
 
