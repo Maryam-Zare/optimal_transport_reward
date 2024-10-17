@@ -9,7 +9,7 @@ def get_config():
   config.max_steps = int(1e6)
   config.evaluate_every = int(5e4)
   config.evaluation_episodes = 10
-  config.seed = 8
+  config.seed = 0
   config.use_dataset_reward = False
   config.wandb_project = 'otr'
   config.wandb_entity = None

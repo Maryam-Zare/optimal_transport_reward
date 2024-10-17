@@ -49,8 +49,11 @@ def compute_iql_reward_scale(trajs):
 def get_demonstration_dataset(config):
   """Return the relabeled offline dataset."""
   
-  expert_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
-  offline_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
+ # expert_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
+ # offline_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
+  
+  offline_dataset_name = "/home/ghazaal/Documents/GitHub/optimal_transport_reward/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_150.npz"
+  expert_dataset_name = "/home/ghazaal/Documents/GitHub/optimal_transport_reward/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_150-1.npz"
   
   if config.use_dataset_reward:
     offline_traj = dataset_utils.convert_dataset_to_trajectories(offline_dataset_name)
