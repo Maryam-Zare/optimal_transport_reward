@@ -57,9 +57,12 @@ def compute_iql_reward_scale(trajs):
 def get_demonstration_dataset(config):
   """Return the relabeled offline dataset."""
 
-  expert_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
-  offline_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
-
+   # expert_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
+ # offline_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
+  
+  offline_dataset_name = "/home/ghazaal/Documents/GitHub/optimal_transport_reward/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_150.npz"
+  expert_dataset_name = "/home/ghazaal/Documents/GitHub/optimal_transport_reward/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_150-1.npz"
+ 
   if config.use_dataset_reward:
       offline_traj = dataset_utils.convert_dataset_to_trajectories(offline_dataset_name)
       reward_scale = compute_iql_reward_scale(offline_traj)
@@ -146,7 +149,7 @@ def objective_function(trial):
   spec = acme.make_environment_spec(environment)
 
 
-  config.actor_lr = trial.suggest_loguniform('actorlearning_rate', 1e-6, 1e-3)
+  config.actor_lr = trial.suggest_loguniform('learning_rate', 1e-6, 1e-4)
   
   
   networks = iql.make_networks(
@@ -172,8 +175,8 @@ def objective_function(trial):
       #discount=config.iql_kwargs['discount']
   )
   
-  config.critic_lr = trial.suggest_loguniform('criticlearning_rate', 1e-6, 1e-3)
-  config.value_lr = trial.suggest_loguniform('valuelearning_rate', 1e-6, 1e-3)
+  config.critic_lr = trial.suggest_loguniform('learning_rate', 1e-6, 1e-3)
+  config.value_lr = trial.suggest_loguniform('learning_rate', 1e-6, 1e-3)
 
 
 
@@ -265,12 +268,12 @@ def main(argv):
   flags.FLAGS(argv)
 
   # Now proceed with setting up the study and optimizing
-  study_name = "Everything150trialwithLR"
+  study_name = "Everything70random"
   storage_name = "sqlite:///otr.db"  # SQLite database URL or other storage location
 
 
   study = optuna.create_study(study_name=study_name, storage=storage_name,direction='maximize')
-  study.optimize(objective_function, n_trials=150)
+  study.optimize(objective_function, n_trials=70)
   
   save_hyperparameters_to_csv(study, 'optimal_params')
 

@@ -1,0 +1,9 @@
+Parameter,Value
+alpha,3
+beta,4
+batch_size,128
+learning_rate,1.0022035661176253e-06
+temperature,10
+expectile,0.6
+discount,0.92
+value,479.5459221482277
