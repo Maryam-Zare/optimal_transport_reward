@@ -236,12 +236,14 @@ def convert_dataset_to_trajectories(file_path):
     actions = dataset['actions']
     rewards = dataset['rewards']
     dones = dataset['dones']
-  
+    counterer= 0
     next_observations = np.roll(observations, -1, axis=0)
     next_observations[-1] = observations[0]
     # Split the dataset into trajectories
     trajs = [[]]
-    #print(np.count_nonzero(dones),"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$",*(np.where(dones)[0]+1)/500)
+    cc = 0
+    
+    print(len(observations),'&&&&&&&')
     for i in tqdm.tqdm(range(len(observations))):
         trajs[-1].append(
             types.Transition(
@@ -252,6 +254,9 @@ def convert_dataset_to_trajectories(file_path):
                 next_observation=next_observations[i]
             ))
         if dones[i] == True and i + 1 < len(observations):
+            counterer = counterer + 1      
             trajs.append([])
-
+    
+   # print(trajs)
+   # print(counterer)
     return trajs

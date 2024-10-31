@@ -53,7 +53,7 @@ def get_demonstration_dataset(config):
  # offline_dataset_name = "/home/ghazaal/Documents/GitHub/SurRoL/surrol/data/demo/data_ActiveTrack-v0_square_100.npz"
   
   offline_dataset_name = "/home/ghazaal/Documents/GitHub/optimal_transport_reward/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_150.npz"
-  expert_dataset_name = "/home/ghazaal/Documents/GitHub/optimal_transport_reward/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_150-1.npz"
+  expert_dataset_name = "/home/ghazaal/Documents/GitHub/optimal_transport_reward/SurRoL/surrol/data/demo/data_ActiveTrack-v0_random_10.npz"
   
   if config.use_dataset_reward:
     offline_traj = dataset_utils.convert_dataset_to_trajectories(offline_dataset_name)
@@ -68,7 +68,7 @@ def get_demonstration_dataset(config):
     # Load expert demonstrations
     offline_traj = dataset_utils.convert_dataset_to_trajectories(expert_dataset_name)
     #print(len(offline_traj[0]),"############",offline_traj[0])
-
+    print(len(offline_traj),"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
     returns = [sum([t.reward for t in traj]) for traj in offline_traj]
     #returns = [traj[-1].reward for traj in offline_traj]
     idx = np.argpartition(returns, -config.k)[-config.k:]
