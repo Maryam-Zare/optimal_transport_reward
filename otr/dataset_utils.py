@@ -243,7 +243,7 @@ def convert_dataset_to_trajectories(file_path):
     trajs = [[]]
     cc = 0
     
-    print(len(observations),'&&&&&&&')
+    
     for i in tqdm.tqdm(range(len(observations))):
         trajs[-1].append(
             types.Transition(
@@ -258,5 +258,8 @@ def convert_dataset_to_trajectories(file_path):
             trajs.append([])
     
    # print(trajs)
-   # print(counterer)
+    
+    trajs = [traj for traj in trajs if len(traj) >= 500]
+    print(len(trajs),'&&&&&&&')
+    
     return trajs
