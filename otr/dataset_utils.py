@@ -253,5 +253,8 @@ def convert_dataset_to_trajectories(file_path):
             ))
         if dones[i] == True and i + 1 < len(observations):
             trajs.append([])
-
+            
+    trajs = [traj for traj in trajs if len(traj) >= 500]
+    print(len(trajs),'&&&&&&&')
+    
     return trajs
