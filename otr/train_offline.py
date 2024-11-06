@@ -77,7 +77,7 @@ def get_demonstration_dataset(config):
     expert_demo = [offline_traj[i] for i in idx]
     
     
-    episode_length = 1000
+    episode_length = 500
     if config.squashing_fn == 'linear':
       squashing_fn = functools.partial(
           rewarder_lib.squashing_linear, alpha=config.alpha)
